@@ -122,7 +122,7 @@ const login = async (req, res) => {
         const options = {
             httpOnly: true,  // Cannot be accessed via JavaScript (only sent with HTTP requests)
             secure: process.env.NODE_ENV === 'production', // Set to true only in production (for HTTPS)
-            sameSite: 'None', // Allows cross-origin cookie transmission (important for cross-origin requests)
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'lax', // Use 'lax' in development, 'None' in production
         };
 
 
@@ -189,7 +189,7 @@ const refreshAccessToken = async (req, res) => {
         const options = {
             httpOnly: true,  // Cannot be accessed via JavaScript (only sent with HTTP requests)
             secure: process.env.NODE_ENV === 'production', // Set to true only in production (for HTTPS)
-            sameSite: 'None', // Allows cross-origin cookie transmission (important for cross-origin requests)
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'lax', // Use 'lax' in development, 'None' in production
         };
 
         const { accessToken, newRefreshToken } =
@@ -238,7 +238,7 @@ const logout = async (req, res) => {
         const options = {
             httpOnly: true,  // Cannot be accessed via JavaScript (only sent with HTTP requests)
             secure: process.env.NODE_ENV === 'production', // Set to true only in production (for HTTPS)
-            sameSite: 'None', // Allows cross-origin cookie transmission (important for cross-origin requests)
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'lax', // Use 'lax' in development, 'None' in production
         };
         return res
             .status(200)

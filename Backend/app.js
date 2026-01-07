@@ -5,11 +5,11 @@ import apiRoutes from "./routes/index.js"; // Main routes file
 import { secureApiMiddleware, setBrowserIdentification } from "./middlewares/securityMiddleware.js";
 
 const app = express();
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'development';
 
 // Middleware Setup
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://scheme-seva-gov.vercel.app"], // Allow your frontend domain and others
+    origin: ["http://localhost:3000", ""], // Allow your frontend domain and others
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Enable cookies in requests and responses
@@ -33,4 +33,4 @@ app.get("/", (req, res) => {
     res.send("API is runningg");
 });
 
-export { app };
+export default app;

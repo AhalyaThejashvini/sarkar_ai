@@ -46,7 +46,7 @@ const Header = () => {
         <header className="bg-[#74B83E] h-20 flex items-center justify-between px-4 md:px-8 w-full relative">
             <Link className="pt-1 flex items-center" to="/">
                 <img src={lionlogo || "/placeholder.svg"} alt="logo" className="w-12 md:w-16 mr-2" />
-                <h1 className="text-white text-2xl md:text-3xl font-bold">SchemeSeva</h1>
+                <h1 className="text-white text-2xl md:text-3xl font-bold">Sarkar AI</h1>
             </Link>
             <nav className="hidden md:flex justify-between items-center gap-10">
                 <Link to="/" className="flex flex-col justify-center items-center text-white">

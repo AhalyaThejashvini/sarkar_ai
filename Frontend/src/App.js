@@ -64,7 +64,7 @@ function App() {
 
                     {/* FOOTER */}
                     <div>
-                        <Footer />
+                        {/* <Footer /> */}
                     </div>
                 </div>
             </UserProvider>
