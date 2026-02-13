@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Search } from 'lucide-react';
 import SchemeSearch from "./SchemeSearch";
 import SchemeCard from "../../common/schemeCard/SchemeCard";
@@ -14,6 +14,17 @@ const Schemes = () => {
     const [totalSchemes, setTotalSchemes] = useState(0);
     const [filters, setFilters] = useState({});
     const [error, setError] = useState(null);
+    const location = useLocation();
+
+    // Read category from URL query (supports both ?cat= and ?category=)
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const cat = params.get('cat') || params.get('category');
+        if (cat) {
+            setFilters(prev => ({ ...prev, category: cat }));
+            setCurrentPage(1);
+        }
+    }, [location.search]);
 
     const fetchSchemes = useCallback(async (page) => {
         try {

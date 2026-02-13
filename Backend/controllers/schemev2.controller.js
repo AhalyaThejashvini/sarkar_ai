@@ -86,8 +86,8 @@ const getFilteredSchemes = async (req, res) => {
             // Check if search term is in 'level' (exact match)
             searchConditions.push({ level: { $eq: search } });
 
-            // Check if search term is in 'Category' array (partial match using regex)
-            searchConditions.push({ Category: { $regex: search, $options: 'i' } });
+            // Check if search term is in 'schemeCategory' array (partial match using regex)
+            searchConditions.push({ schemeCategory: { $regex: search, $options: 'i' } });
 
             // Check if search term is in 'detailedDescription_md' (partial match)
             searchConditions.push({ detailedDescription_md: { $regex: search, $options: 'i' } });  // Case-insensitive
@@ -130,10 +130,36 @@ const getFilteredSchemes = async (req, res) => {
             filter.level = level;
         }
 
-        // Filter by category (assuming it's an array of categories)
+        // Filter by category (map to relevant tags/keywords since schemeCategory is empty)
         if (category) {
-            const categoriesArray = category.split(','); // assuming categories are passed as a comma-separated string
-            filter.category = { $in: categoriesArray };
+            const categoryKeywordMap = {
+                'Education': ['education', 'scholarship', 'student', 'course', 'skill', 'training'],
+                'Healthcare': ['health', 'medical', 'disease', 'treatment', 'hospital', 'nursing', 'ayurveda'],
+                'Women Empowerment': ['women', 'girl', 'maternity', 'harassment', 'widow'],
+                'Employment': ['job', 'employment', 'unemployment', 'wage', 'labor', 'worker'],
+                'Housing': ['housing', 'house', 'home', 'rent', 'construction', 'property'],
+                'Agriculture': ['agriculture', 'farmer', 'farm', 'crop', 'livestock', 'irrigation', 'soil'],
+                'Skill Development': ['skill', 'training', 'vocational', 'apprenticeship', 'development'],
+                'Transportation': ['transport', 'vehicle', 'auto', 'taxi', 'bus', 'fuel'],
+                'Energy': ['energy', 'solar', 'power', 'electricity', 'renewable'],
+                'Digital India': ['digital', 'internet', 'telecom', 'broadband', 'online'],
+                'Rural Development': ['rural', 'village', 'development', 'infrastructure', 'farming']
+            };
+
+            const categoriesArray = category.split(',');
+            const keywordsArray = [];
+            
+            categoriesArray.forEach(cat => {
+                const keywords = categoryKeywordMap[cat.trim()];
+                if (keywords) {
+                    keywordsArray.push(...keywords);
+                }
+            });
+
+            // If we have mapped keywords, filter by tags containing any of them
+            if (keywordsArray.length > 0) {
+                filter.tags = { $in: keywordsArray };
+            }
         }
 
         // Filter by tags (assuming it's an array of tags)
