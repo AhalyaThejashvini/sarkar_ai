@@ -2,6 +2,7 @@ import Home from "./components/pages/home/Home";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Header from "./components/common/header/Header";
 import Footer from "./components/common/footer/Footer";
+import ChatBot from "./components/common/chatbot/ChatBot";
 import Login from "./components/pages/auth/Login";
 import Signup from "./components/pages/auth/Signup";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
@@ -66,6 +67,10 @@ function App() {
                     <div>
                         {/* <Footer /> */}
                     </div>
+                    {/* Global ChatBot (visible on all pages) */}
+                    <ChatBot schemeId={null} />
+                    {/* Global ChatBot (visible on all pages) */}
+                    <ChatBot schemeId={null} />
                 </div>
             </UserProvider>
         </BrowserRouter>

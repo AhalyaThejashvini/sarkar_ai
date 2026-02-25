@@ -141,6 +141,10 @@ const ChatBot = ({ schemeId }) => {
         }]);
     }, [language]);
 
+    useEffect(() => {
+        console.log('ChatBot mounted, schemeId:', schemeId);
+    }, [schemeId]);
+
     const formatResponse = (text) => {
         // Remove asterisks and format sections
         const cleanText = text.replace(/\*\*/g, '');
@@ -179,13 +183,12 @@ const ChatBot = ({ schemeId }) => {
         setIsLoading(true);
 
         try {
+            const payload = { question: userMessage, language };
+            if (schemeId) payload.schemeId = schemeId;
+
             const response = await axios.post(
                 `${process.env.REACT_APP_BACKEND_URL}/api/v1/chatbot/scheme-response`,
-                {
-                    schemeId,
-                    question: userMessage,
-                    language
-                }
+                payload
             );
 
             setMessages(prev => [...prev, {

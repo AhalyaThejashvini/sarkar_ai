@@ -2,11 +2,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
+console.log('Gemini API Key loaded:', process.env.GEMINI_API_KEY ? 'YES (hidden)' : 'NO - NOT SET');
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const generateSchemeResponse = async (scheme, question, language = 'en') => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         
         // Create a context-aware prompt with language instruction
         const prompt = `
@@ -69,7 +71,36 @@ export const generateSchemeResponse = async (scheme, question, language = 'en') 
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error('Error generating chatbot response:', error);
+        const errorMsg = error.message || error;
+        console.error('Error generating chatbot response:', errorMsg);
+        
+        // Check if it's a quota error (free tier limit exceeded)
+        if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('Quota exceeded')) {
+            return `I'm currently experiencing high demand on the AI service. However, here's the key information about this scheme:\n\n**${scheme.schemeName}** (${scheme.schemeShortTitle})\nMinistry: ${scheme.nodalMinistryName?.label || 'Not specified'}\nState: ${scheme.state || 'Not specified'}\n\nFor detailed information, please visit the scheme page or contact the nodal ministry directly.`;
+        }
+        
+        return "I apologize, but I'm having trouble processing your question. Please try asking in a different way or contact support for assistance.";
+    }
+};
+
+export const generateGenericResponse = async (question, language = 'en') => {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const prompt = `You are an assistant that answers questions about government schemes in India. Provide a concise, helpful answer to the user's question below. If the user asks for specific scheme details, mention that no specific scheme context was provided and offer guidance on how to find relevant schemes (search by category, eligibility, or state).\n\nUser question: ${question}\n\nRespond in ${language === 'hi' ? 'Hindi' : language === 'pa' ? 'Punjabi' : 'English'}.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        const errorMsg = error.message || error;
+        console.error('Error generating generic chatbot response:', errorMsg);
+        
+        // Check if it's a quota error (free tier limit exceeded)
+        if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('Quota exceeded')) {
+            return `I'm currently experiencing high demand on the AI service due to free tier usage limits. However, here are some general tips:\n\n📚 **Tips for Finding Government Schemes:**\n1. Browse schemes by **category** (education, healthcare, employment, etc.)\n2. Filter by your **state** to see location-specific schemes\n3. Check **eligibility criteria** carefully before applying\n4. Use the search feature to find schemes by keywords\n\nPlease try your query again in a few moments, or explore the schemes using the filters above!`;
+        }
+        
         return "I apologize, but I'm having trouble processing your question. Please try asking in a different way or contact support for assistance.";
     }
 };

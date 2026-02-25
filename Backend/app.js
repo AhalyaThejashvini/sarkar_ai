@@ -9,7 +9,7 @@ const isProduction = process.env.NODE_ENV === 'development';
 
 // Middleware Setup
 const corsOptions = {
-    origin: ["http://localhost:3000", ""], // Allow your frontend domain and others
+    origin: ["http://localhost:3000", "http://localhost:3001"], // Allow your frontend domain and others
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Enable cookies in requests and responses
