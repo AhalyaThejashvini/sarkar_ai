@@ -6,10 +6,29 @@ console.log('Gemini API Key loaded:', process.env.GEMINI_API_KEY ? 'YES (hidden)
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const languageMap = {
+    en: 'English',
+    hi: 'Hindi',
+    pa: 'Punjabi',
+    bn: 'Bengali',
+    te: 'Telugu',
+    ta: 'Tamil',
+    gu: 'Gujarati',
+    mr: 'Marathi',
+    kn: 'Kannada',
+    ml: 'Malayalam',
+    or: 'Odia',
+    ur: 'Urdu',
+    sa: 'Sanskrit',
+    ne: 'Nepali',
+    sd: 'Sindhi',
+    ks: 'Kashmiri'
+};
+
 export const generateSchemeResponse = async (scheme, question, language = 'en') => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
         // Create a context-aware prompt with language instruction
         const prompt = `
         Given this government scheme:
@@ -61,7 +80,7 @@ export const generateSchemeResponse = async (scheme, question, language = 'en') 
         If the question is about deadlines, mention both open and close dates if available.
 
         Important: 
-        1. Respond in ${language === 'hi' ? 'Hindi' : language === 'pa' ? 'Punjabi' : 'English'} language
+        1. Respond in ${languageMap[language] || 'English'} language
         2. Keep the response focused and relevant to the question
         3. If information is not available, clearly state that
         4. For dates, mention if they are current or past
@@ -71,36 +90,36 @@ export const generateSchemeResponse = async (scheme, question, language = 'en') 
         const response = await result.response;
         return response.text();
     } catch (error) {
-        const errorMsg = error.message || error;
+        const errorMsg = error.message || String(error);
         console.error('Error generating chatbot response:', errorMsg);
-        
+
         // Check if it's a quota error (free tier limit exceeded)
         if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('Quota exceeded')) {
             return `I'm currently experiencing high demand on the AI service. However, here's the key information about this scheme:\n\n**${scheme.schemeName}** (${scheme.schemeShortTitle})\nMinistry: ${scheme.nodalMinistryName?.label || 'Not specified'}\nState: ${scheme.state || 'Not specified'}\n\nFor detailed information, please visit the scheme page or contact the nodal ministry directly.`;
         }
-        
+
         return "I apologize, but I'm having trouble processing your question. Please try asking in a different way or contact support for assistance.";
     }
 };
 
 export const generateGenericResponse = async (question, language = 'en') => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-        const prompt = `You are an assistant that answers questions about government schemes in India. Provide a concise, helpful answer to the user's question below. If the user asks for specific scheme details, mention that no specific scheme context was provided and offer guidance on how to find relevant schemes (search by category, eligibility, or state).\n\nUser question: ${question}\n\nRespond in ${language === 'hi' ? 'Hindi' : language === 'pa' ? 'Punjabi' : 'English'}.`;
+        const prompt = `You are an assistant that answers questions about government schemes in India. Provide a concise, helpful answer to the user's question below. If the user asks for specific scheme details, mention that no specific scheme context was provided and offer guidance on how to find relevant schemes (search by category, eligibility, or state).\n\nUser question: ${question}\n\nRespond in ${languageMap[language] || 'English'}.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
     } catch (error) {
-        const errorMsg = error.message || error;
+        const errorMsg = error.message || String(error);
         console.error('Error generating generic chatbot response:', errorMsg);
-        
+
         // Check if it's a quota error (free tier limit exceeded)
         if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('Quota exceeded')) {
             return `I'm currently experiencing high demand on the AI service due to free tier usage limits. However, here are some general tips:\n\n📚 **Tips for Finding Government Schemes:**\n1. Browse schemes by **category** (education, healthcare, employment, etc.)\n2. Filter by your **state** to see location-specific schemes\n3. Check **eligibility criteria** carefully before applying\n4. Use the search feature to find schemes by keywords\n\nPlease try your query again in a few moments, or explore the schemes using the filters above!`;
         }
-        
+
         return "I apologize, but I'm having trouble processing your question. Please try asking in a different way or contact support for assistance.";
     }
 };
