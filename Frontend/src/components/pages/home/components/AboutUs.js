@@ -2,7 +2,7 @@ import { Info, Target, Users, Shield } from "lucide-react";
 
 const AboutUs = () => {
     return (
-        <section className="px-8 py-12 ">
+        <section id="about-us" className="px-8 py-12 ">
             <div className="container mx-auto">
                 <h2 className="text-3xl font-bold text-center mb-8">About Us</h2>
                 <div className="max-w-4xl mx-auto text-center">

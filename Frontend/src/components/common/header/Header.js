@@ -42,6 +42,19 @@ const Header = () => {
         }
     };
 
+    // Smooth scroll to About Us section
+    const handleAboutClick = (e) => {
+        e.preventDefault();
+        if (window.location.pathname === "/") {
+            const aboutSection = document.getElementById("about-us");
+            if (aboutSection) {
+                aboutSection.scrollIntoView({ behavior: "smooth" });
+            }
+        } else {
+            navigate("/#about-us");
+        }
+    };
+
     return (
         <header className="bg-[#74B83E] h-20 flex items-center justify-between px-4 md:px-8 w-full relative">
             <Link className="pt-1 flex items-center" to="/">
@@ -53,10 +66,10 @@ const Header = () => {
                     <Home className="w-7 h-7" />
                     <p className="font-semibold">Home</p>
                 </Link>
-                <Link to="/about" className="flex flex-col justify-center items-center text-white">
+                <a href="/#about-us" onClick={handleAboutClick} className="flex flex-col justify-center items-center text-white">
                     <Info className="w-7 h-7" />
                     <p className="font-semibold">About</p>
-                </Link>
+                </a>
                 <Link to="/schemes" className="flex flex-col justify-center items-center text-white">
                     <FileText className="w-7 h-7" />
                     <p className="font-semibold">Schemes</p>
@@ -109,7 +122,9 @@ const Header = () => {
             {isOpen && (
                 <div onClick={() => { setIsOpen(!isOpen); }} className="absolute top-20 left-0 right-0 bg-[#74B83E] md:hidden min-h-screen z-50 px-6">
                     <NavLink to="/" icon={<Home size={18} />}>Home</NavLink>
-                    <NavLink to="/about" icon={<Info size={18} />}>About</NavLink>
+                    <a href="/#about-us" onClick={handleAboutClick} className="text-white hover:text-green-200 py-2 md:inline md:py-0 flex items-center">
+                        <span className="mr-2"><Info size={18} /></span>About
+                    </a>
                     <NavLink to="/schemes" icon={<FileText size={18} />}>Schemes</NavLink>
                     <NavLink to="/recommendations" icon={<ShieldCheck size={18} />}>Suggests</NavLink>
                 </div>
