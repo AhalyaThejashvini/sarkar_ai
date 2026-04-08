@@ -29,6 +29,20 @@ const SchemeDetails = () => {
         });
     };
 
+    const formatMinistry = (ministry) => {
+        if (!ministry) return null;
+
+        if (typeof ministry === 'string') {
+            return ministry;
+        }
+
+        if (typeof ministry === 'object') {
+            return ministry.label || ministry.name || ministry.value || JSON.stringify(ministry);
+        }
+
+        return String(ministry);
+    };
+
     useEffect(() => {
         const fetchSchemeDetails = async () => {
             try {
@@ -130,7 +144,7 @@ const SchemeDetails = () => {
                         {/* Important Details */}
                         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-xl p-4">
                             {scheme?.nodalMinistryName && (
-                                <p className="text-gray-600">Ministry: <span className="font-medium text-gray-900">{scheme.nodalMinistryName}</span></p>
+                                <p className="text-gray-600">Ministry: <span className="font-medium text-gray-900">{formatMinistry(scheme.nodalMinistryName)}</span></p>
                             )}
                             {scheme?.state && (
                                 <p className="text-gray-600">State: <span className="font-medium text-gray-900">{scheme.state}</span></p>

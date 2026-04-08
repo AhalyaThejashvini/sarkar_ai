@@ -15,9 +15,9 @@ const schemeSchema = new Schema({
         default: null
     },
     nodalMinistryName: {
-        type: Object,  // Since it can be null or {label: "string"}
-        default: null
-    },
+    type: String,
+    default: null
+},
     schemeName: {
         type: String,
         required: true

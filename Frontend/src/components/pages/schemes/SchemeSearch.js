@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, BookOpen, Users, Coins, Calendar, Building2, MapPin, Filter, ChevronDown, X } from "lucide-react";
 
 // Constants remain the same
@@ -56,21 +56,27 @@ const STATES = [
 
 const LEVELS = ["State/ UT", "Central", "State"];
 
-const SchemeSearch = ({ onSearch }) => {
-    const [filters, setFilters] = useState({
-        search: "",
-        schemeName: "",
-        openDate: "",
-        closeDate: "",
-        state: "",
-        nodalMinistryName: "",
-        level: "",
-        category: "",
-        gender: "",
-        incomeGroup: "",
-    });
+const DEFAULT_FILTERS = {
+    search: "",
+    schemeName: "",
+    openDate: "",
+    closeDate: "",
+    state: "",
+    nodalMinistryName: "",
+    level: "",
+    category: "",
+    gender: "",
+    incomeGroup: "",
+};
+
+const SchemeSearch = ({ onSearch, initialFilters = {} }) => {
+    const [filters, setFilters] = useState({ ...DEFAULT_FILTERS, ...initialFilters });
 
     const [activeTab, setActiveTab] = useState('basic');
+
+    useEffect(() => {
+        setFilters({ ...DEFAULT_FILTERS, ...initialFilters });
+    }, [initialFilters]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;

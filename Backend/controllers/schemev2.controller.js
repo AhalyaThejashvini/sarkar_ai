@@ -1,6 +1,56 @@
 import Schemev2 from "../models/schemev2.model.js";
 import User from "../models/user.model.js";
 
+const CATEGORY_KEYWORD_MAP = {
+    'Education': ['education', 'scholarship', 'student', 'course', 'skill', 'training'],
+    'Healthcare': ['health', 'medical', 'disease', 'treatment', 'hospital', 'nursing', 'ayurveda'],
+    'Women Empowerment': ['women', 'girl', 'maternity', 'harassment', 'widow'],
+    'Employment': ['job', 'employment', 'unemployment', 'wage', 'labor', 'worker'],
+    'Housing': ['housing', 'house', 'home', 'rent', 'construction', 'property'],
+    'Agriculture': ['agriculture', 'farmer', 'farm', 'crop', 'livestock', 'irrigation', 'soil'],
+    'Skill Development': ['skill', 'training', 'vocational', 'apprenticeship', 'development'],
+    'Transportation': ['transport', 'vehicle', 'auto', 'taxi', 'bus', 'fuel'],
+    'Energy': ['energy', 'solar', 'power', 'electricity', 'renewable'],
+    'Digital India': ['digital', 'internet', 'telecom', 'broadband', 'online'],
+    'Rural Development': ['rural', 'village', 'development', 'infrastructure', 'farming'],
+
+    // Categories used in SchemeSearch dropdown
+    'Women and Child': ['women', 'woman', 'girl', 'child', 'children', 'maternity', 'widow'],
+    'Utility & Sanitation': ['utility', 'sanitation', 'toilet', 'water', 'hygiene', 'clean'],
+    'Travel & Tourism': ['travel', 'tourism', 'tourist', 'pilgrimage', 'trip'],
+    'Transport & Infrastructure Sports & Culture': ['transport', 'infrastructure', 'sports', 'culture', 'stadium', 'road'],
+    'Social welfare & Empowerment': ['social', 'welfare', 'empowerment', 'pension', 'support'],
+    'Skills & Employment': ['skill', 'training', 'employment', 'job', 'worker', 'entrepreneur'],
+    'Science, IT & Communications': ['science', 'technology', 'it', 'digital', 'communication', 'telecom'],
+    'Public Safety,Law & Justice': ['safety', 'law', 'justice', 'legal', 'security', 'police'],
+    'Housing & Shelter': ['housing', 'house', 'home', 'shelter', 'rent', 'construction'],
+    'Health & Wellness': ['health', 'wellness', 'medical', 'hospital', 'treatment', 'medicine'],
+    'Education & Learning': ['education', 'learning', 'scholarship', 'student', 'school', 'college'],
+    'Business & Entrepreneurship': ['business', 'entrepreneurship', 'startup', 'msme', 'enterprise', 'trade'],
+    'Banking, Financial Services and Insurance': ['banking', 'financial', 'finance', 'insurance', 'credit', 'loan'],
+    'Agriculture,Rural & Environment': ['agriculture', 'rural', 'environment', 'farmer', 'farm', 'climate']
+};
+
+const escapeRegex = (text = '') => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getCategoryTerms = (categoryValue = '') => {
+    const normalized = String(categoryValue).trim();
+    if (!normalized) {
+        return [];
+    }
+
+    if (CATEGORY_KEYWORD_MAP[normalized]) {
+        return CATEGORY_KEYWORD_MAP[normalized];
+    }
+
+    // Fallback: derive keywords from category text so unknown categories still filter.
+    return normalized
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map((term) => term.trim())
+        .filter((term) => term.length > 2);
+};
+
 const getAllSchemes = async (req, res) => {
     try {
         const { page = 1, limit = 9 } = req.query;
@@ -59,124 +109,89 @@ const getSchemeByCategory = async (req, res) => {
 const getFilteredSchemes = async (req, res) => {
     try {
         const { page = 1, limit = 9 } = req.query;
-        const {
-            search, openDate, closeDate, state, nodalMinistryName, level,
-            category, tags, schemeName
-        } = req.query;
+        const { search, openDate, closeDate, state, nodalMinistryName, level, category, tags, schemeName } = req.query;
 
-        // Prepare the filter object
         const filter = {};
+        const andConditions = [];
 
-        // Apply search filter to multiple fields
         if (search) {
-            const searchConditions = [];
-
-            // Check if search term is in 'state' (exact match)
-            searchConditions.push({ state: { $eq: search } });
-
-            // Check if search term is in 'nodalMinistryName' (partial match using regex)
-            searchConditions.push({ nodalMinistryName: { $regex: search, $options: 'i' } });
-
-            // Check if search term is in 'schemeName' (partial match using regex)
-            searchConditions.push({ schemeName: { $regex: search, $options: 'i' } });
-
-            // Check if search term is in 'tags' array (exact match)
-            searchConditions.push({ tags: { $in: [search] } });
-
-            // Check if search term is in 'level' (exact match)
-            searchConditions.push({ level: { $eq: search } });
-
-            // Check if search term is in 'schemeCategory' array (partial match using regex)
-            searchConditions.push({ schemeCategory: { $regex: search, $options: 'i' } });
-
-            // Check if search term is in 'detailedDescription_md' (partial match)
-            searchConditions.push({ detailedDescription_md: { $regex: search, $options: 'i' } });  // Case-insensitive
-
-            // Combine all the conditions using $or
-            filter.$or = searchConditions;
+            andConditions.push({ $or: [
+                { state: { $eq: search } },
+                { nodalMinistryName: { $regex: search, $options: 'i' } },
+                { schemeName: { $regex: search, $options: 'i' } },
+                { tags: { $in: [search] } },
+                { level: { $eq: search } },
+                { schemeCategory: { $regex: search, $options: 'i' } },
+                { detailedDescription_md: { $regex: search, $options: 'i' } },
+            ]});
         }
 
-        // Handle date range filters for openDate and closeDate
         if (openDate || closeDate) {
-            const dateConditions = [];
-
-            if (openDate) {
-                dateConditions.push({ openDate: { $gte: new Date(openDate) } });
-            }
-
-            if (closeDate) {
-                dateConditions.push({ closeDate: { $lte: new Date(closeDate) } });
-            }
-
-            // Add conditions where openDate or closeDate are null
-            dateConditions.push({ openDate: { $eq: null } });
-            dateConditions.push({ closeDate: { $eq: null } });
-
-            filter.$or = dateConditions;
+            const dateConds = [];
+            if (openDate) dateConds.push({ openDate: { $gte: new Date(openDate) } });
+            if (closeDate) dateConds.push({ closeDate: { $lte: new Date(closeDate) } });
+            dateConds.push({ openDate: null });
+            dateConds.push({ closeDate: null });
+            andConditions.push({ $or: dateConds });
         }
 
-        // Filter by state
-        if (state) {
-            filter.state = state;
+        if (schemeName) {
+            andConditions.push({ $or: [
+                { schemeName: { $regex: schemeName, $options: 'i' } },
+                { schemeShortTitle: { $regex: schemeName, $options: 'i' } },
+            ]});
         }
 
-        // Filter by nodalMinistryName
-        if (nodalMinistryName) {
-            filter.nodalMinistryName = nodalMinistryName;
-        }
+        if (state) filter.state = state;
+        if (nodalMinistryName) filter.nodalMinistryName = nodalMinistryName;
+        if (level) filter.level = level;
 
-        // Filter by level
-        if (level) {
-            filter.level = level;
-        }
-
-        // Filter by category (map to relevant tags/keywords since schemeCategory is empty)
         if (category) {
-            const categoryKeywordMap = {
-                'Education': ['education', 'scholarship', 'student', 'course', 'skill', 'training'],
-                'Healthcare': ['health', 'medical', 'disease', 'treatment', 'hospital', 'nursing', 'ayurveda'],
-                'Women Empowerment': ['women', 'girl', 'maternity', 'harassment', 'widow'],
-                'Employment': ['job', 'employment', 'unemployment', 'wage', 'labor', 'worker'],
-                'Housing': ['housing', 'house', 'home', 'rent', 'construction', 'property'],
-                'Agriculture': ['agriculture', 'farmer', 'farm', 'crop', 'livestock', 'irrigation', 'soil'],
-                'Skill Development': ['skill', 'training', 'vocational', 'apprenticeship', 'development'],
-                'Transportation': ['transport', 'vehicle', 'auto', 'taxi', 'bus', 'fuel'],
-                'Energy': ['energy', 'solar', 'power', 'electricity', 'renewable'],
-                'Digital India': ['digital', 'internet', 'telecom', 'broadband', 'online'],
-                'Rural Development': ['rural', 'village', 'development', 'infrastructure', 'farming']
-            };
+            const normalizedCategory = String(category).trim();
 
-            const categoriesArray = category.split(',');
-            const keywordsArray = [];
-            
-            categoriesArray.forEach(cat => {
-                const keywords = categoryKeywordMap[cat.trim()];
-                if (keywords) {
-                    keywordsArray.push(...keywords);
+            // If the full category exists in map, treat it as a single category label.
+            // Otherwise keep support for comma-separated category filters.
+            const categoryValues = CATEGORY_KEYWORD_MAP[normalizedCategory]
+                ? [normalizedCategory]
+                : normalizedCategory.split(',').map((item) => item.trim()).filter(Boolean);
+
+            const categoryTerms = [...new Set(categoryValues.flatMap((item) => getCategoryTerms(item)))];
+            const categoryRegexes = categoryValues.map((item) => new RegExp(escapeRegex(item), 'i'));
+
+            const categoryOrConditions = [];
+
+            if (categoryTerms.length > 0) {
+                categoryOrConditions.push({ tags: { $in: categoryTerms } });
+
+                const textSearchTerms = categoryTerms.filter((term) => term.length > 3);
+                if (textSearchTerms.length > 0) {
+                    const categoryTermsRegex = new RegExp(
+                        textSearchTerms.map((term) => escapeRegex(term)).join('|'),
+                        'i'
+                    );
+                    categoryOrConditions.push({ schemeName: categoryTermsRegex });
+                    categoryOrConditions.push({ schemeShortTitle: categoryTermsRegex });
                 }
-            });
+            }
 
-            // If we have mapped keywords, filter by tags containing any of them
-            if (keywordsArray.length > 0) {
-                filter.tags = { $in: keywordsArray };
+            if (categoryValues.length > 0) {
+                categoryOrConditions.push({ schemeCategory: { $in: categoryValues } });
+                categoryOrConditions.push({ schemeName: { $in: categoryRegexes } });
+                categoryOrConditions.push({ schemeShortTitle: { $in: categoryRegexes } });
+            }
+
+            if (categoryOrConditions.length > 0) {
+                andConditions.push({ $or: categoryOrConditions });
             }
         }
 
-        // Filter by tags (assuming it's an array of tags)
         if (tags) {
-            const tagsArray = tags.split(','); // assuming tags are passed as a comma-separated string
+            const tagsArray = tags.split(',');
             filter.tags = { $in: tagsArray };
         }
 
-        // Filter by schemeName (case-insensitive)
-        if (schemeName) {
-            filter.$or = filter.$or || []; // Ensure the $or array exists
-
-            // Case-insensitive match for schemeName
-            filter.$or.push({ schemeName: { $regex: schemeName, $options: 'i' } });
-
-            // Case-insensitive match for schemeShortTitle
-            filter.$or.push({ schemeShortTitle: { $regex: schemeName, $options: 'i' } });
+        if (andConditions.length > 0) {
+            filter.$and = andConditions;
         }
 
         const options = {
@@ -254,16 +269,11 @@ const removeFavoriteSchemes = async (req, res) => {
 
 const getFavoriteSchemes = async (req, res) => {
     try {
-        // Get the logged-in user's ID from the request
         const userId = req.user._id;
-
-        // Find the user by ID and retrieve their favorite schemes
-        const user = await User.findById(userId);
-
-        // Return the user's favorite schemes
+        const user = await User.findById(userId).populate('favorites');
+        if (!user) return res.status(404).json({ message: "User not found" });
         res.status(200).json(user.favorites);
     } catch (error) {
-        // Handle errors
         console.error("Error retrieving favorite schemes:", error);
         res.status(500).json({ message: "Error retrieving favorite schemes" });
     }

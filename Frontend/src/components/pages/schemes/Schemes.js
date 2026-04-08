@@ -1,10 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search } from 'lucide-react';
 import SchemeSearch from "./SchemeSearch";
 import SchemeCard from "../../common/schemeCard/SchemeCard";
 import { getFilteredSchemes, getAllSchemes } from '../../../services/schemes/schemeService';
 import Pagination from '../../common/pagination/Pagination';
+
+const FILTER_KEYS = [
+    'search',
+    'schemeName',
+    'openDate',
+    'closeDate',
+    'state',
+    'nodalMinistryName',
+    'level',
+    'category',
+    'gender',
+    'incomeGroup'
+];
+
+const cleanFilters = (rawFilters = {}) => {
+    return Object.fromEntries(
+        Object.entries(rawFilters).filter(([_, value]) =>
+            value !== undefined && value !== null && String(value).trim() !== ''
+        )
+    );
+};
+
+const parseFiltersFromQuery = (search) => {
+    const params = new URLSearchParams(search);
+    const parsed = {};
+
+    const category = params.get('category') || params.get('cat');
+    if (category) {
+        parsed.category = category;
+    }
+
+    FILTER_KEYS.forEach((key) => {
+        if (key === 'category') {
+            return;
+        }
+
+        const value = params.get(key);
+        if (value) {
+            parsed[key] = value;
+        }
+    });
+
+    return parsed;
+};
+
+const buildQueryString = (filters = {}, page = 1) => {
+    const params = new URLSearchParams();
+    const normalizedFilters = cleanFilters(filters);
+
+    Object.entries(normalizedFilters).forEach(([key, value]) => {
+        params.set(key, value);
+    });
+
+    if (page > 1) {
+        params.set('page', String(page));
+    }
+
+    return params.toString();
+};
 
 const Schemes = () => {
     const [schemes, setSchemes] = useState([]);
@@ -15,25 +74,16 @@ const Schemes = () => {
     const [filters, setFilters] = useState({});
     const [error, setError] = useState(null);
     const location = useLocation();
+    const navigate = useNavigate();
 
-    // Read category from URL query (supports both ?cat= and ?category=)
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const cat = params.get('cat') || params.get('category');
-        if (cat) {
-            setFilters(prev => ({ ...prev, category: cat }));
-            setCurrentPage(1);
-        }
-    }, [location.search]);
-
-    const fetchSchemes = useCallback(async (page) => {
+    const fetchSchemes = async (page, activeFilters = {}) => {
         try {
             setLoading(true);
             setError(null);
             let data;
-            
-            if (Object.keys(filters).length > 0) {
-                data = await getFilteredSchemes(filters, page);
+
+            if (Object.keys(activeFilters).length > 0) {
+                data = await getFilteredSchemes(activeFilters, page);
             } else {
                 data = await getAllSchemes(page);
             }
@@ -48,32 +98,59 @@ const Schemes = () => {
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    };
 
     useEffect(() => {
-        fetchSchemes(currentPage);
-    }, [currentPage, fetchSchemes]);
+        const params = new URLSearchParams(location.search);
+        const activeFilters = parseFiltersFromQuery(location.search);
+        const parsedPage = parseInt(params.get('page') || '1', 10);
+        const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+
+        setFilters(activeFilters);
+        setCurrentPage(page);
+        fetchSchemes(page, activeFilters);
+    }, [location.search]);
 
     const handlePageChange = (page) => {
-        setCurrentPage(page);
+        const queryString = buildQueryString(filters, page);
+        const nextSearch = queryString ? `?${queryString}` : '';
+
+        if (nextSearch === location.search) {
+            setCurrentPage(page);
+            fetchSchemes(page, filters);
+        } else {
+            navigate({ pathname: '/schemes', search: nextSearch });
+        }
+
         window.scrollTo(0, 0);
     };
 
-    const handleSearch = async (filters) => {
-        setFilters(filters);
-        setCurrentPage(1);
+    const handleSearch = (newFilters) => {
+        const activeFilters = cleanFilters(newFilters);
+        const queryString = buildQueryString(activeFilters, 1);
+        const nextSearch = queryString ? `?${queryString}` : '';
+
+        if (nextSearch === location.search) {
+            setFilters(activeFilters);
+            setCurrentPage(1);
+            fetchSchemes(1, activeFilters);
+        } else {
+            navigate({ pathname: '/schemes', search: nextSearch });
+        }
     };
 
-    const schemesCountText = totalSchemes > 0 
-        ? `Showing ${(currentPage-1)*9}-${currentPage*9} of ${totalSchemes} schemes`
+    const schemesCountText = totalSchemes > 0
+        ? `Showing ${(currentPage - 1) * 9}-${currentPage * 9} of ${totalSchemes} schemes`
         : '';
+
+    // ... rest of your JSX stays exactly the same
 
     return (
         <div className="bg-gray-100 min-h-screen">
             <section className="container mx-auto py-12">
                 <h1 className="text-4xl font-bold pt-10 mb-8 text-center">Find Schemes for You</h1>
                 <div className="bg-gray-200 rounded-lg shadow-md sm:px-6 sm:py-10 mb-8">
-                    <SchemeSearch onSearch={handleSearch} />
+                    <SchemeSearch onSearch={handleSearch} initialFilters={filters} />
                 </div>
 
                 {!loading && schemesCountText && (
